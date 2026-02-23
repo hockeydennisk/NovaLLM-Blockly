@@ -8,7 +8,20 @@ export function initAIBlocks() {
         .appendField(new Blockly.FieldTextInput('資深程式專家'), 'ROLE');
       this.appendDummyInput()
         .appendField('專長領域:')
-        .appendField(new Blockly.FieldTextInput(''), 'EXPERTISE');
+        .appendField(new Blockly.FieldDropdown([
+          ['Frontend 工程師', 'Frontend Engineer'],
+          ['Backend 工程師', 'Backend Engineer'],
+          ['資料科學家', 'Data Scientist'],
+          ['UX 設計師', 'UX Designer'],
+          ['產品經理', 'Product Manager'],
+          ['財經分析師', 'Financial Analyst'],
+          ['行銷專家', 'Marketing Expert'],
+          ['HR 顧問', 'HR Consultant'],
+          ['自訂', 'custom']
+        ]), 'EXPERTISE_PRESET');
+      this.appendDummyInput()
+        .appendField('自訂專長:')
+        .appendField(new Blockly.FieldTextInput(''), 'EXPERTISE_CUSTOM');
       this.appendDummyInput()
         .appendField('語氣:')
         .appendField(new Blockly.FieldDropdown([

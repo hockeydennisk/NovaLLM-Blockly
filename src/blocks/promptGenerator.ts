@@ -13,8 +13,16 @@ export function initPromptGenerator() {
 
   promptGenerator.forBlock['ai_persona'] = function(block) {
     const role = block.getFieldValue('ROLE');
-    const expertise = block.getFieldValue('EXPERTISE');
+    const expertisePreset = block.getFieldValue('EXPERTISE_PRESET');
+    const expertiseCustom = block.getFieldValue('EXPERTISE_CUSTOM');
     const tone = block.getFieldValue('TONE');
+
+    let expertise = '';
+    if (expertisePreset === 'custom') {
+      expertise = expertiseCustom;
+    } else if (expertisePreset && expertisePreset !== 'custom') {
+      expertise = expertisePreset;
+    }
 
     let prompt = `你是${role}`;
     if (expertise) {
@@ -133,8 +141,15 @@ export function generatePromptFromWorkspace(workspace: Blockly.WorkspaceSvg): st
   const topBlocks = workspace.getTopBlocks(true);
 
   const prompts = topBlocks.map(block => {
-    return generator.blockToCode(block);
-  }).filter(code => code.trim() !== '');
+    const code = generator.blockToCode(block);
+    if (Array.isArray(code)) {
+      return code[0];
+    }
+    return code;
+  }).filter(code => {
+    const codeStr = Array.isArray(code) ? code[0] : code;
+    return codeStr && codeStr.toString().trim() !== '';
+  });
 
   return prompts.join('\n\n');
 }

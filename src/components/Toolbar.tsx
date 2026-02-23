@@ -1,13 +1,14 @@
-import { Save, FolderOpen, Share2, Sparkles } from 'lucide-react';
+import { Save, FolderOpen, Share2, Sparkles, Edit3 } from 'lucide-react';
 
 interface ToolbarProps {
   onSave: () => void;
   onLoad: () => void;
   onShare: () => void;
   onNewTemplate: () => void;
+  onEditBlock?: () => void;
 }
 
-export function Toolbar({ onSave, onLoad, onShare, onNewTemplate }: ToolbarProps) {
+export function Toolbar({ onSave, onLoad, onShare, onNewTemplate, onEditBlock }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-200">
       <button
@@ -39,6 +40,18 @@ export function Toolbar({ onSave, onLoad, onShare, onNewTemplate }: ToolbarProps
         <Share2 size={18} />
         分享
       </button>
+      {onEditBlock && (
+        <>
+          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <button
+            onClick={onEditBlock}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            <Edit3 size={18} />
+            編輯積木
+          </button>
+        </>
+      )}
     </div>
   );
 }

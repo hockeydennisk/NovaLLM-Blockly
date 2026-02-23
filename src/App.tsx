@@ -4,8 +4,11 @@ import { BlocklyWorkspace } from './components/BlocklyWorkspace';
 import { PromptPreview } from './components/PromptPreview';
 import { ResultPanel } from './components/ResultPanel';
 import { Toolbar } from './components/Toolbar';
+import { TemplatesList } from './components/TemplatesList';
+import { BlockEditorModal } from './components/BlockEditorModal';
 import { generatePromptFromWorkspace } from './blocks/promptGenerator';
 import { executePrompt } from './services/novallm';
+import { PRESET_TEMPLATES, PresetTemplate } from './data/presetTemplates';
 
 function App() {
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
@@ -13,6 +16,8 @@ function App() {
   const [result, setResult] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionTime, setExecutionTime] = useState<number | undefined>();
+  const [showBlockEditor, setShowBlockEditor] = useState(false);
+  const [templates, setTemplates] = useState(PRESET_TEMPLATES);
 
   const handleWorkspaceChange = useCallback((ws: Blockly.WorkspaceSvg) => {
     setWorkspace(ws);
@@ -113,6 +118,27 @@ function App() {
     }
   };
 
+  const handleSelectPresetTemplate = (template: PresetTemplate) => {
+    if (workspace) {
+      try {
+        workspace.clear();
+        const xml = Blockly.utils.xml.textToDom(template.xml);
+        Blockly.Xml.domToWorkspace(xml, workspace);
+      } catch (error) {
+        console.error('Failed to load template:', error);
+        alert('載入模板失敗');
+      }
+    }
+  };
+
+  const handleSaveBlockEditor = (data: { name: string; icon: string; color: string }) => {
+    console.log('Block editor data:', data);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    setTemplates(templates.filter(t => t.id !== id));
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
@@ -125,8 +151,15 @@ function App() {
           onLoad={handleLoad}
           onShare={handleShare}
           onNewTemplate={handleNewTemplate}
+          onEditBlock={() => setShowBlockEditor(true)}
         />
       </header>
+
+      <TemplatesList
+        templates={templates}
+        onSelectTemplate={handleSelectPresetTemplate}
+        onDeleteTemplate={handleDeleteTemplate}
+      />
 
       <div className="flex-1 grid grid-cols-2 gap-4 p-4 overflow-hidden">
         <div className="flex flex-col bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -166,6 +199,13 @@ function App() {
           </div>
         </div>
       </footer>
+
+      <BlockEditorModal
+        isOpen={showBlockEditor}
+        onClose={() => setShowBlockEditor(false)}
+        blockType="custom"
+        onSave={handleSaveBlockEditor}
+      />
     </div>
   );
 }
