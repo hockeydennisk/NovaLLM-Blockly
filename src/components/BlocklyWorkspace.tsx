@@ -12,6 +12,26 @@ export function BlocklyWorkspace({ onWorkspaceChange, initialXml }: BlocklyWorks
   const blocklyDiv = useRef<HTMLDivElement>(null);
   const workspaceRef = useRef<Blockly.WorkspaceSvg | null>(null);
 
+  const syncFlyoutScrollbarVisibility = () => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+
+    const container = workspace.getParentSvg();
+    if (!container) return;
+
+    const flyout = workspace.getFlyout();
+    const flyoutEl = container.querySelector<SVGGElement>('.blocklyFlyout');
+    const flyoutScrollbar = container.querySelector<SVGGElement>('.blocklyFlyoutScrollbar');
+
+    if (!flyoutEl || !flyoutScrollbar) return;
+
+    const flyoutVisible = Boolean(flyout?.isVisible?.())
+      && flyoutEl.style.display !== 'none'
+      && !flyoutEl.classList.contains('blocklyHidden');
+
+    flyoutScrollbar.style.display = flyoutVisible ? '' : 'none';
+  };
+
   useEffect(() => {
     if (!blocklyDiv.current) return;
 
@@ -49,9 +69,11 @@ export function BlocklyWorkspace({ onWorkspaceChange, initialXml }: BlocklyWorks
 
     const changeListener = () => {
       onWorkspaceChange(workspace);
+      requestAnimationFrame(syncFlyoutScrollbarVisibility);
     };
 
     workspace.addChangeListener(changeListener);
+    requestAnimationFrame(syncFlyoutScrollbarVisibility);
 
     return () => {
       workspace.removeChangeListener(changeListener);

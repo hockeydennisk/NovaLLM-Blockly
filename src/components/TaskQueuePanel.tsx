@@ -17,6 +17,48 @@ interface TaskQueuePanelProps {
 }
 
 export function TaskQueuePanel({ tasks, selectedTask, onOpenTask, onCloseTask }: TaskQueuePanelProps) {
+  const renderMarkdownLike = (text: string) => {
+    const lines = text.split('\n');
+    return lines.map((line, idx) => {
+      const trimmed = line.trim();
+
+      if (trimmed.startsWith('### ')) {
+        return <h3 key={idx} className="text-base font-semibold mt-2 mb-1">{trimmed.slice(4)}</h3>;
+      }
+      if (trimmed.startsWith('## ')) {
+        return <h2 key={idx} className="text-lg font-semibold mt-2 mb-1">{trimmed.slice(3)}</h2>;
+      }
+      if (trimmed.startsWith('# ')) {
+        return <h1 key={idx} className="text-xl font-bold mt-2 mb-1">{trimmed.slice(2)}</h1>;
+      }
+      if (/^[-*]\s+/.test(trimmed)) {
+        return <p key={idx} className="pl-4">• {trimmed.replace(/^[-*]\s+/, '')}</p>;
+      }
+      if (/^\d+\.\s+/.test(trimmed)) {
+        return <p key={idx} className="pl-4">{trimmed}</p>;
+      }
+
+      return <p key={idx}>{trimmed || '\u00A0'}</p>;
+    });
+  };
+
+  const renderResult = (result?: string) => {
+    if (!result) return '無結果';
+
+    try {
+      const parsed = JSON.parse(result);
+      return (
+        <pre className="text-sm bg-gray-50 p-3 rounded whitespace-pre-wrap">
+          {JSON.stringify(parsed, null, 2)}
+        </pre>
+      );
+    } catch {
+      return (
+        <div className="bg-gray-50 p-3 rounded text-sm leading-6 space-y-1">{renderMarkdownLike(result)}</div>
+      );
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-gray-200">
@@ -56,7 +98,7 @@ export function TaskQueuePanel({ tasks, selectedTask, onOpenTask, onCloseTask }:
               <h4 className="font-semibold mb-2 text-sm">Prompt</h4>
               <pre className="text-xs bg-gray-50 p-2 rounded mb-4 whitespace-pre-wrap">{selectedTask.prompt}</pre>
               <h4 className="font-semibold mb-2 text-sm">Result</h4>
-              <pre className="text-sm bg-gray-50 p-3 rounded whitespace-pre-wrap">{selectedTask.result || '無結果'}</pre>
+              {renderResult(selectedTask.result)}
             </div>
           </div>
         </div>
