@@ -10,9 +10,16 @@ import { TaskQueuePanel, QueueTask } from './components/TaskQueuePanel';
 import { generatePromptFromWorkspace } from './blocks/promptGenerator';
 import { executePrompt } from './services/novallm';
 import { PRESET_TEMPLATES, PresetTemplate } from './data/presetTemplates';
+import {
+  fetchConversationIdsFromSupabase,
+  fetchPromptTemplatesFromSupabase,
+  savePromptTemplateToSupabase,
+  upsertConversationSessionToSupabase,
+} from './lib/supabase';
 
 const USER_TEMPLATE_PREFIX = 'prompt_template_';
 const MARKETPLACE_KEY = 'template_marketplace';
+const LOCAL_CONVERSATION_IDS_KEY = 'conversation_ids';
 
 function App() {
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
@@ -23,8 +30,10 @@ function App() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [queue, setQueue] = useState<QueueTask[]>([]);
   const [selectedTask, setSelectedTask] = useState<QueueTask | null>(null);
+  const [conversationIds, setConversationIds] = useState<string[]>([]);
 
   useEffect(() => {
+    const bootstrap = async () => {
     const loaded: PresetTemplate[] = [...PRESET_TEMPLATES];
 
     for (let i = 0; i < localStorage.length; i++) {
@@ -45,13 +54,29 @@ function App() {
       }
     }
 
-    setTemplates(loaded);
+    const remoteTemplates = await fetchPromptTemplatesFromSupabase();
+    const mappedRemoteTemplates = remoteTemplates.map((template) => ({
+      id: template.id,
+      name: template.name,
+      description: template.description || '雲端模板',
+      icon: '☁️',
+      xml: template.workspace_xml,
+    }));
+
+    setTemplates([...loaded, ...mappedRemoteTemplates]);
 
     try {
       setMarketplaceTemplates(JSON.parse(localStorage.getItem(MARKETPLACE_KEY) || '[]'));
     } catch {
       setMarketplaceTemplates([]);
     }
+    const localConversationIds = JSON.parse(localStorage.getItem(LOCAL_CONVERSATION_IDS_KEY) || '[]');
+    const remoteConversationIds = await fetchConversationIdsFromSupabase();
+    const mergedConversationIds = Array.from(new Set([...localConversationIds, ...remoteConversationIds]));
+    setConversationIds(mergedConversationIds);
+  };
+
+    bootstrap();
   }, []);
 
   const handleWorkspaceChange = useCallback((ws: Blockly.WorkspaceSvg) => {
@@ -61,6 +86,7 @@ function App() {
 
   const handleExecute = async (promptToExecute: string) => {
     const taskId = `task_${Date.now()}`;
+    const conversationId = `conv_${Date.now()}`;
     const newTask: QueueTask = {
       id: taskId,
       prompt: promptToExecute,
@@ -69,6 +95,11 @@ function App() {
     };
 
     setQueue((prev) => [newTask, ...prev]);
+    setConversationIds((prev) => {
+      const next = Array.from(new Set([conversationId, ...prev]));
+      localStorage.setItem(LOCAL_CONVERSATION_IDS_KEY, JSON.stringify(next));
+      return next;
+    });
 
     const progressTimer = window.setInterval(() => {
       setQueue((prev) => prev.map((t) => (
@@ -92,6 +123,11 @@ function App() {
           }
           : t
       )));
+      await upsertConversationSessionToSupabase({
+        conversation_id: conversationId,
+        last_prompt: promptToExecute,
+        last_result: response.success ? response.response : `錯誤: ${response.error}`,
+      });
     } catch (error) {
       window.clearInterval(progressTimer);
       setQueue((prev) => prev.map((t) => (
@@ -104,6 +140,11 @@ function App() {
           }
           : t
       )));
+      await upsertConversationSessionToSupabase({
+        conversation_id: conversationId,
+        last_prompt: promptToExecute,
+        last_result: `執行失敗: ${error instanceof Error ? error.message : '未知錯誤'}`,
+      });
     }
   };
 
@@ -124,6 +165,12 @@ function App() {
     };
 
     localStorage.setItem(key, JSON.stringify(data));
+    savePromptTemplateToSupabase({
+      name: data.name,
+      description: '使用者儲存模板',
+      workspace_xml: data.xml,
+      generated_prompt: data.prompt,
+    });
 
     setTemplates((prev) => [
       ...prev,
@@ -227,6 +274,7 @@ function App() {
           <div>
             <h1 className="text-2xl font-bold">NVT Magic Block - Visual Prompt Engineering Platform</h1>
             <p className="text-blue-100 text-sm mt-1">用積木組合AI提示詞，讓Prompt成為可視化的企業資產</p>
+            <p className="text-blue-100 text-xs mt-1">已管理對話數量：{conversationIds.length}</p>
           </div>
           <button onClick={() => setIsMinimized(true)} className="p-2 rounded bg-white/20 hover:bg-white/30" title="縮小成常駐小精靈">
             <Minimize2 size={20} />
