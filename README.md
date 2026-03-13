@@ -67,7 +67,7 @@
 - **前端框架**：React + TypeScript + Vite
 - **視覺化引擎**：Blockly
 - **樣式**：Tailwind CSS
-- **資料庫**：Supabase（用於儲存自定義積木和模板）
+- **資料儲存**：本地 JSON 檔案 API（可放在 Windows 本機磁碟或網域共享資料夾）
 - **AI API**：NovaLLM（公司內部 API）
 
 ## 快速開始
@@ -78,10 +78,19 @@
 2. 設定必要的環境變數：
 
 ```bash
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_TEMPLATE_API_URL=http://localhost:3030
 VITE_NOVALLM_API_URL=your_novallm_api_url
 VITE_NOVALLM_API_KEY=your_novallm_api_key
+```
+
+3. 可選擇建立 `.env.local`（給本地資料庫 API）
+
+```bash
+LOCAL_DB_PORT=3030
+# Windows 本機範例
+LOCAL_DB_PATH=D:/NVTData/local-db.json
+# Windows 網域共享範例（UNC 路徑）
+# LOCAL_DB_PATH=\\fileserver\team-share\nvt-magic-block\local-db.json
 ```
 
 ### 安裝與執行
@@ -90,7 +99,10 @@ VITE_NOVALLM_API_KEY=your_novallm_api_key
 # 安裝依賴
 npm install
 
-# 啟動開發伺服器
+## 啟動本地資料庫 API（建議先啟動）
+npm run dev:db
+
+# 另開一個終端機，啟動前端
 npm run dev
 
 # 建置正式版本
@@ -184,21 +196,26 @@ npm run build
 - [ ] **變數系統**：支援更複雜的資料傳遞
 - [ ] **Prompt 範本庫**：預設多種產業常用範本
 
-## 資料庫結構
+## 本地資料庫格式（JSON）
 
-### prompt_templates
-- 儲存完整的 Blockly 工作區 XML
-- 支援公開/私有設定
-- 記錄創建者與時間
+資料會儲存在 `LOCAL_DB_PATH` 指定的檔案，例如：
 
-### custom_blocks
-- 使用者自定義的積木
-- 6種類型：persona, task, context, constraint, output, optimizer
-- 可分享給團隊
+```json
+{
+  "templates": [
+    {
+      "id": "tpl_1737612345678",
+      "name": "QA Log 分析",
+      "xml": "<xml>...</xml>",
+      "prompt": "你是資深QA工程師...",
+      "savedAt": "2026-01-23T12:34:56.789Z",
+      "updatedAt": "2026-01-23T12:34:56.789Z"
+    }
+  ]
+}
+```
 
-### execution_history
-- 記錄每次執行的 Prompt 與結果
-- 追蹤成效與執行時間
+> 若前端無法連上 API，會自動退回瀏覽器 `localStorage` 儲存模式。
 
 ## 演示腳本（競賽用）
 

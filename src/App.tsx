@@ -9,6 +9,7 @@ import { BlockEditorModal } from './components/BlockEditorModal';
 import { generatePromptFromWorkspace } from './blocks/promptGenerator';
 import { executePrompt } from './services/novallm';
 import { PRESET_TEMPLATES, PresetTemplate } from './data/presetTemplates';
+import { listTemplates, saveTemplate } from './services/templateRepository';
 
 function App() {
   const [workspace, setWorkspace] = useState<Blockly.WorkspaceSvg | null>(null);
@@ -40,7 +41,7 @@ function App() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!workspace) return;
 
     const xml = Blockly.Xml.workspaceToDom(workspace);
@@ -49,29 +50,26 @@ function App() {
     const templateName = window.prompt('請輸入模板名稱：');
     if (!templateName) return;
 
-    localStorage.setItem(`prompt_template_${Date.now()}`, JSON.stringify({
-      name: templateName,
-      xml: xmlText,
-      prompt: prompt,
-      savedAt: new Date().toISOString()
-    }));
-
-    alert('模板已儲存！');
+    try {
+      await saveTemplate({
+        name: templateName,
+        xml: xmlText,
+        prompt,
+      });
+      alert('模板已儲存！');
+    } catch (error) {
+      alert(`模板儲存失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
+    }
   };
 
-  const handleLoad = () => {
-    const templates: Array<{ key: string; name: string; savedAt: string }> = [];
+  const handleLoad = async () => {
+    let templates;
 
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith('prompt_template_')) {
-        try {
-          const data = JSON.parse(localStorage.getItem(key) || '');
-          templates.push({ key, name: data.name, savedAt: data.savedAt });
-        } catch (error) {
-          console.error('Failed to parse template:', error);
-        }
-      }
+    try {
+      templates = await listTemplates();
+    } catch (error) {
+      alert(`讀取模板失敗: ${error instanceof Error ? error.message : '未知錯誤'}`);
+      return;
     }
 
     if (templates.length === 0) {
@@ -88,7 +86,7 @@ function App() {
 
     const index = parseInt(selection) - 1;
     if (index >= 0 && index < templates.length) {
-      const templateData = JSON.parse(localStorage.getItem(templates[index].key) || '');
+      const templateData = templates[index];
       if (workspace && templateData.xml) {
         workspace.clear();
         const xml = Blockly.utils.xml.textToDom(templateData.xml);
