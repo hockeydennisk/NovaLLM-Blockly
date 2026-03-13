@@ -9,10 +9,19 @@
 cp .env.example .env
 ```
 
-編輯 `.env` 文件（如果有 NovaLLM API）：
+編輯 `.env` 文件：
 ```
+VITE_TEMPLATE_API_URL=http://localhost:3030
 VITE_NOVALLM_API_URL=your_api_url
 VITE_NOVALLM_API_KEY=your_api_key
+```
+
+若你要把資料存到 Windows 本機或共享資料夾，可在 `.env.local` 設定：
+```
+LOCAL_DB_PORT=3030
+LOCAL_DB_PATH=D:/NVTData/local-db.json
+# 或網域共享資料夾（UNC）
+# LOCAL_DB_PATH=\\fileserver\team-share\nvt-magic-block\local-db.json
 ```
 
 **注意**：如果沒有設定 API，系統會自動進入 Demo 模式，仍可正常使用所有功能。
@@ -23,7 +32,10 @@ VITE_NOVALLM_API_KEY=your_api_key
 # 安裝依賴
 npm install
 
-# 啟動開發伺服器
+# 先啟動本地資料庫 API
+npm run dev:db
+
+# 再啟動前端（另開一個終端機）
 npm run dev
 ```
 

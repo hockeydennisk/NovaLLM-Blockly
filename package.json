@@ -8,10 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "dev:db": "node server/local-db-server.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.57.4",
     "blockly": "^12.3.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
